@@ -1,5 +1,5 @@
 import javax.swing.*;
-
+import java.util.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -12,16 +12,29 @@ public class Main {
 	 * This whole game is built in a single file! (because why not)
 	 */
 	
+	/*
+	 * TODO:
+	 * 1) Display game over message in gameOver()
+	 * 2) Ensure snake does not collide with himself
+	 */
+	
 	static JFrame frame = new JFrame("Snake Game");
 	
-	static final boolean RUNNING = true;
+	static boolean running = true;
 	
 	static final int MAP_WIDTH = 23;
     static final int MAP_HEIGHT = 19;
     
     static final int TILE_SIZE = 40;
     
-    static final int SNAKE_SPEED = 3; // amount of tiles that the snake moves in a second
+    static int SNAKE_SPEED = 8; // amount of tiles that the snake moves in a second
+    static String SnakeDirection = "N";
+    static String SnakeCurrentDirection = "N";
+    
+    static int[] snakeHeadCords = {(int)Math.floor(MAP_HEIGHT / 2), 6}; // keep track of the snake's head's cords (for collision detection)
+    // NOTE: snakeHeadCords[0] gives row number, snakeHeadCords[1] gives column number
+    
+    static ArrayList<int[]> snake = new ArrayList<int[]>(); // to keep track of coordinates of each part of the snake's body
     
     static final Color DARK_GREEN = new Color(0, 150, 0);
     static final Color LIGHT_GREEN = new Color(0, 130, 0);
@@ -30,8 +43,6 @@ public class Main {
     
     static final String[][] stringMap = initStringMap();
     static final JPanel[][] panelMap = initJPanelMap();
-    
-    static String SnakeDirection = "L";
 
 	public static void main(String[] args) throws InterruptedException{
 
@@ -53,7 +64,7 @@ public class Main {
         frame.setVisible(true);
         
         // GAME LOOP:
-        while(RUNNING) {
+        while(running) {
         	
         	update();
         	
@@ -68,23 +79,72 @@ public class Main {
     
     static private void update() {
     	
-    	switch(SnakeDirection) {
-		case "U":
-			panelMap[0][1].setBackground(Color.BLACK);
-			break;
-		case "D":
-			panelMap[2][1].setBackground(Color.BLACK);
-			break;
-		case "L":
-			panelMap[1][0].setBackground(Color.BLACK);
-			break;
-		case "R":
-			panelMap[1][2].setBackground(Color.BLACK);
-			break;
+    	// 1) Check for wall collision
+    	if((snakeHeadCords[0] == 0 && SnakeDirection.equals("U")) || (snakeHeadCords[0] == MAP_HEIGHT - 1 && SnakeDirection.equals("D")) || (snakeHeadCords[1] == 0 && SnakeDirection.equals("L")) || (snakeHeadCords[1] == MAP_WIDTH - 1 && SnakeDirection.equals("R"))) {
+    		gameOver();
+    		return;
     	}
+    	
+    	// 2) Move/Update Snake HEAD
+    	switch(SnakeDirection) {
+			case "U":
+				SnakeCurrentDirection = "U";
+				snakeHeadCords[0]--;
+				break;
+			case "D":
+				SnakeCurrentDirection = "D";
+				snakeHeadCords[0]++;
+				break;
+			case "L":
+				SnakeCurrentDirection = "L";
+				snakeHeadCords[1]--;
+				break;
+			case "R":
+				SnakeCurrentDirection = "R";
+				snakeHeadCords[1]++;
+				break;
+			default:
+				return; // user has not moved yet
+    	}
+    	
+    	// 3) Check for snake collision
+    	if(snake.contains(snakeHeadCords)) {
+    		gameOver();
+    		return;
+    	}
+    	
+    	// 4) Check for apple eaten & Fully update snake body
+    	//		- If yes, increase snake length
+    	//		- If no, snake keeps moving
+    	if(stringMap[snakeHeadCords[0]][snakeHeadCords[1]].equals("A")) {
+    		
+    		// Update map to show new snake head
+    		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
+    		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
+    		snake.add(a);
+    		
+    		appleEaten();
+    	}else { // apple not eaten
+    		
+    		// Update map to show new snake head
+    		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
+    		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
+    		snake.add(a);
+    		
+    		// Update map to remove snake head
+    		int[] a1 = {snake.get(0)[0], snake.get(0)[1]};
+    		stringMap[a1[0]][a1[1]] = "N";
+    		snake.remove(0);
+    		
+    	}
+    	
     }
     
     static private void redraw() {
+    	
+    	if(!running) {
+    		return;
+    	}
     	
     	for(int i = 0;i < MAP_HEIGHT;i++) {
     		for(int j = 0;j < MAP_WIDTH;j++) {
@@ -108,8 +168,16 @@ public class Main {
     	}
     }
     
+    static private void appleEaten() {
+    	
+    	// TODO: Finish This
+    }
+    
     static private void gameOver() {
     	
+    	running = false;
+    	panelMap[0][0].setBackground(Color.BLACK); // TEMPORARY
+    	//TODO: Display game over message
     }
     
     static private String[][] initStringMap(){
@@ -122,11 +190,27 @@ public class Main {
         	}
     	}
     	
-    	//Create snake and apple:
-    	map[(int)Math.floor(MAP_HEIGHT / 2)][4] = "S";
-    	map[(int)Math.floor(MAP_HEIGHT / 2)][5] = "S";
-    	map[(int)Math.floor(MAP_HEIGHT / 2)][6] = "S";
-    	map[(int)Math.floor(MAP_HEIGHT / 2)][MAP_WIDTH - 6] = "A";
+    	//Create snake and apple, adding snake's body cords to the snake ArrayList:
+    	map[snakeHeadCords[0]][snakeHeadCords[1] - 2] = "S";
+    	int[] a = {snakeHeadCords[0], snakeHeadCords[1] - 2};
+    	snake.add(a);
+    	
+    	map[snakeHeadCords[0]][snakeHeadCords[1] - 1] = "S";
+    	int[] a1 = {snakeHeadCords[0], snakeHeadCords[1] - 1};
+    	snake.add(a1);
+    	
+    	map[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
+    	int[] a2 = {snakeHeadCords[0], snakeHeadCords[1]};
+    	snake.add(a2);
+    	
+    	map[snakeHeadCords[0]][MAP_WIDTH - 8] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 7] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 6] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 5] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 4] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 3] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 2] = "A";
+    	map[snakeHeadCords[0]][MAP_WIDTH - 1] = "A";
     	
     	return map;
     }
@@ -159,13 +243,25 @@ public class Main {
             int keyCode = e.getKeyCode();
             
             if (keyCode == KeyEvent.VK_UP) {
-            	SnakeDirection = "U";
+            	
+            	if(!SnakeCurrentDirection.equals("D")) {
+            		SnakeDirection = "U";	
+            	}
             } else if (keyCode == KeyEvent.VK_DOWN) {
-            	SnakeDirection = "D";
+            	
+            	if(!SnakeCurrentDirection.equals("U")) {
+            		SnakeDirection = "D";
+            	}
             } else if (keyCode == KeyEvent.VK_LEFT) {
-            	SnakeDirection = "L";
+            	
+            	if(!SnakeCurrentDirection.equals("R")) {
+            		SnakeDirection = "L";
+            	}
             } else if (keyCode == KeyEvent.VK_RIGHT) {
-            	SnakeDirection = "R";
+            	
+            	if(!SnakeCurrentDirection.equals("L")) {
+            		SnakeDirection = "R";
+            	}
             }
         }
     	
