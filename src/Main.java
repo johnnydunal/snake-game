@@ -31,7 +31,7 @@ public class Main {
     static int DEFAULT_SNAKE_SPEED = 8;
     static int FAST_SNAKE_SPEED = (int)(DEFAULT_SNAKE_SPEED * 2.2);
     static int SNAKE_SPEED = DEFAULT_SNAKE_SPEED; // amount of tiles that the snake moves in a second
-    static int SnakeLength = 3;
+    static int BlueSnakeLength = 3;
     static String SnakeDirection = "N";
     static String SnakeCurrentDirection = "R";
     
@@ -55,6 +55,14 @@ public class Main {
     static final int maxNumOfApples = 8;
     static boolean readyToAddWall = true;
     static int wallsToAddPerWallAttack = 2;
+    
+    // Special variables for the 2-player version:
+    static int winner = 0; // 0 = no winner yet, 1 = blue, 2 = cyan
+    static ArrayList<int[]> snake2 = new ArrayList<int[]>(); // cyan snake
+    static int[] snakeHeadCords2 = {0, 0};
+    static int CyanSnakeLength = 3;
+    static String SnakeDirection2 = "N";
+    static String SnakeCurrentDirection2 = "R";
 
 	public static void main(String[] args) throws InterruptedException{
 		
@@ -66,7 +74,7 @@ public class Main {
         frame.setResizable(false);
 		
 		JPanel welcomePanel = new JPanel();
-		welcomePanel.setLayout(new GridLayout(3, 1));
+		welcomePanel.setLayout(new GridLayout(4, 1));
 		welcomePanel.setBackground(Color.WHITE);
     	
         JLabel title = new JLabel("Welcome to Snake Game!", SwingConstants.CENTER);
@@ -83,9 +91,15 @@ public class Main {
         playLabel2.setBackground(Color.WHITE);
         playLabel2.setForeground(Color.BLACK);
         
+        JLabel playLabel3 = new JLabel("Press 3 to play 2-player Chaotic Game", SwingConstants.CENTER);
+        playLabel3.setFont(new Font("Arial", Font.BOLD, TILE_SIZE));
+        playLabel3.setBackground(Color.WHITE);
+        playLabel3.setForeground(Color.BLACK);
+        
         welcomePanel.add(title);
         welcomePanel.add(playLabel);
         welcomePanel.add(playLabel2);
+        welcomePanel.add(playLabel3);
         
         frame.setLayout(new GridLayout(1, 1));
         frame.getContentPane().add(welcomePanel);
@@ -110,6 +124,11 @@ public class Main {
         		JOptionPane.showMessageDialog(frame, introMessage, "Chaos Ensues", JOptionPane.INFORMATION_MESSAGE);
         		playChaoticGame();
         		break;
+        	case 3:
+        		String introMessage2 = "Chaos is coming! Apples multiply, golden apples shine, walls appear at random, the world has no edges, and there are 2 snakes present.\nOrange snake uses WASD. Blue uses arrow keys. Good luck!";
+        		JOptionPane.showMessageDialog(frame, introMessage2, "Chaos Ensues - 2 Player", JOptionPane.INFORMATION_MESSAGE);
+        		playTwoPlayerChaoticGame();
+        		break;
         	default:
         		playNormalGame();
         }
@@ -129,7 +148,7 @@ public class Main {
 		speedBoosted = false;
 		ticksSpentWithSpeedBoost = 0;
 		score = 0;
-		SnakeLength = 3;
+		BlueSnakeLength = 3;
 	    SnakeDirection = "N";
 	    SnakeCurrentDirection = "R";
 	    snakeHeadCords[0] = (int)Math.floor(MAP_HEIGHT / 2);
@@ -192,7 +211,7 @@ public class Main {
 		speedBoosted = false;
 		ticksSpentWithSpeedBoost = 0;
 		score = 0;
-		SnakeLength = 3;
+		BlueSnakeLength = 3;
 	    SnakeDirection = "N";
 	    SnakeCurrentDirection = "R";
 	    snakeHeadCords[0] = (int)Math.floor(MAP_HEIGHT / 2);
@@ -229,7 +248,7 @@ public class Main {
         	}
         	
         	// Check Whether a Wall should be spawned:
-        	if(SnakeLength % 9 == 0 && readyToAddWall) {
+        	if(BlueSnakeLength % 9 == 0 && readyToAddWall) {
         		addWall(true, wallsToAddPerWallAttack);
         		readyToAddWall = false;
         	}
@@ -243,11 +262,94 @@ public class Main {
         	
         }
 	}
+	
+	static private void playTwoPlayerChaoticGame() throws InterruptedException{
+		
+		/*
+		 * CHAOTIC GAME Two-Player VERSION!!
+		 * 
+		 * Includes:
+		 *  - More Apples
+		 *  - More Golden Apples
+		 *  - Extra Walls
+		 *  - Wrap-around / Teleportation
+		 *  - And More to come!
+		 * 
+		 */
+		
+		// This method contains all the code to set up / run the game
+		
+		frame.getContentPane().removeAll(); // remove all stuff from previous instances
+		
+		// Reset global variables in case this method is rerun:
+		gameChosen = 3;
+		running = true;
+		paused = false;
+		speedBoosted = false;
+		ticksSpentWithSpeedBoost = 0;
+		score = 0;
+		BlueSnakeLength = 3;
+		CyanSnakeLength = 3;
+	    SnakeDirection = "L";
+	    SnakeCurrentDirection = "L";
+	    SnakeDirection2 = "R";
+	    SnakeCurrentDirection2 = "R";
+	    snakeHeadCords[0] = MAP_HEIGHT - 2;
+	    snakeHeadCords[1] = MAP_WIDTH - 5;
+	    snakeHeadCords2[0] = 1;
+	    snakeHeadCords2[1] = 4;
+	    snake = new ArrayList<int[]>();
+	    stringMap = initStringMap();
+	    panelMap = initJPanelMap();
+	    winner = 0;
+		
+		SoundPlayer.playSound("true-short-silence.wav"); // empty sound file to prepare SoundPlayer
+        
+        frame.getContentPane().setBackground(Color.BLACK);
+        
+        frame.setLayout(new GridLayout(MAP_HEIGHT, MAP_WIDTH));
+        
+        redraw(); // to make sure that the snake and apple are on the map
+        
+        // Filling in all necessary apples:
+        int counter = 0; // to make sure an infinite loop doesn't happen
+        while(totalNumOfApples <= maxNumOfApples) {
+        	appleEaten(false);
+        	counter++;
+        	if(counter > maxNumOfApples) {break;}
+        }
+        
+        frame.setVisible(true);
+        
+        // GAME LOOP:
+        while(running) {
+        	
+        	if(paused) {
+        		Thread.sleep(100);
+        		continue;
+        	}
+        	
+        	// Check Whether a Wall should be spawned:
+        	if((BlueSnakeLength % 9 == 0 || CyanSnakeLength % 9 == 0) && readyToAddWall) {
+        		addWall(true, 1);
+        		readyToAddWall = false;
+        	}
+        	
+        	update();
+        	update2(); // second snake
+        	
+        	redraw();
+        	
+        	//wait
+        	Thread.sleep(1000 / SNAKE_SPEED);
+        	
+        }
+	}
     
     static private void update() {
     	
     	// 1) Check for wall collision
-    	if(gameChosen != 2 && ((snakeHeadCords[0] == 0 && SnakeDirection.equals("U")) || (snakeHeadCords[0] == MAP_HEIGHT - 1 && SnakeDirection.equals("D")) || (snakeHeadCords[1] == 0 && SnakeDirection.equals("L")) || (snakeHeadCords[1] == MAP_WIDTH - 1 && SnakeDirection.equals("R")))) {
+    	if(gameChosen == 1 && ((snakeHeadCords[0] == 0 && SnakeDirection.equals("U")) || (snakeHeadCords[0] == MAP_HEIGHT - 1 && SnakeDirection.equals("D")) || (snakeHeadCords[1] == 0 && SnakeDirection.equals("L")) || (snakeHeadCords[1] == MAP_WIDTH - 1 && SnakeDirection.equals("R")))) {
     		gameOver();
     		return;
     	}
@@ -275,7 +377,7 @@ public class Main {
     	}
     	
     	// wrap snake around edges IF IN CHAOTIC MODE!
-    	if(gameChosen == 2) {
+    	if(gameChosen == 2 || gameChosen == 3) {
     		snakeHeadCords[0] = (snakeHeadCords[0] + MAP_HEIGHT) % MAP_HEIGHT;
     		snakeHeadCords[1] = (snakeHeadCords[1] + MAP_WIDTH) % MAP_WIDTH;
     	}
@@ -283,6 +385,7 @@ public class Main {
     	// 3) Check for snake collision
     	for(int i = 0;i < snake.size();i++) {
     		if(snake.get(i)[0] == snakeHeadCords[0] && snake.get(i)[1] == snakeHeadCords[1]) {
+    			winner = 2;
     			gameOver();
         		return;
     		}
@@ -300,7 +403,7 @@ public class Main {
     		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
     		snake.add(a);
     		
-    		SnakeLength++;
+    		BlueSnakeLength++;
     		score++;
     		totalNumOfApples--;
     		readyToAddWall = true; // for chaotic mode
@@ -317,7 +420,7 @@ public class Main {
     		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
     		snake.add(a);
     		
-    		SnakeLength++;
+    		BlueSnakeLength++;
     		score++;
     		totalNumOfApples--;
     		readyToAddWall = true; // for chaotic mode
@@ -330,6 +433,12 @@ public class Main {
     		
     	} else if(tileReached.equals("W")){
     		
+    		winner = 2;
+    		gameOver();
+    		return;
+    	} else if(tileReached.equals("SC")){
+    		
+    		winner = 2;
     		gameOver();
     		return;
     	} else { // apple not eaten
@@ -348,6 +457,108 @@ public class Main {
     	
     }
     
+    static private void update2() { // update cyan snake for 2-player version
+    	
+    	// 2) Move/Update Snake HEAD
+    	switch(SnakeDirection2) {
+			case "U":
+				SnakeCurrentDirection2 = "U";
+				snakeHeadCords2[0]--;
+				break;
+			case "D":
+				SnakeCurrentDirection2 = "D";
+				snakeHeadCords2[0]++;
+				break;
+			case "L":
+				SnakeCurrentDirection2 = "L";
+				snakeHeadCords2[1]--;
+				break;
+			case "R":
+				SnakeCurrentDirection2 = "R";
+				snakeHeadCords2[1]++;
+				break;
+			default:
+				return; // user has not moved yet
+    	}
+    	
+    	// wrap snake around edges
+    	snakeHeadCords2[0] = (snakeHeadCords2[0] + MAP_HEIGHT) % MAP_HEIGHT;
+    	snakeHeadCords2[1] = (snakeHeadCords2[1] + MAP_WIDTH) % MAP_WIDTH;
+    	
+    	// 3) Check for snake collision
+    	for(int i = 0;i < snake2.size();i++) {
+    		if(snake2.get(i)[0] == snakeHeadCords2[0] && snake2.get(i)[1] == snakeHeadCords2[1]) {
+    			winner = 1;
+    			gameOver();
+        		return;
+    		}
+    	}
+    	
+    	// 4) Check for apple eaten & Fully update snake body
+    	//		- If yes, increase snake length
+    	//		- If no, snake keeps moving
+    	String tileReached = stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]];
+    	
+    	if(tileReached.equals("A")) {
+    		
+    		// Update map to show new snake head
+    		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
+    		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
+    		snake2.add(a);
+    		
+    		CyanSnakeLength++;
+    		totalNumOfApples--;
+    		readyToAddWall = true; // for chaotic mode
+    		
+    		checkSpeed();
+    		appleEaten(true);
+    		
+    	} else if(tileReached.equals("AG")) {
+    		
+    		// Golden Apple Eaten!
+    		
+    		// Update map to show new snake head
+    		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
+    		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
+    		snake2.add(a);
+    		
+    		CyanSnakeLength++;
+    		score++;
+    		totalNumOfApples--;
+    		readyToAddWall = true; // for chaotic mode
+    		
+    		ticksSpentWithSpeedBoost = 0;
+    		speedBoosted = true;
+    		
+    		checkSpeed();
+    		appleEaten(true);
+    		
+    	} else if(tileReached.equals("W")){
+    		
+    		winner = 1;
+    		gameOver();
+    		return;
+    	} else if(tileReached.equals("S")) {
+    		
+    		winner = 1;
+    		gameOver();
+    		return;
+    	} else { // apple not eaten
+    		
+    		// Update map to show new snake head
+    		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
+    		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
+    		snake2.add(a);
+    		
+    		// Update map to remove snake tail
+    		int[] a1 = {snake2.get(0)[0], snake2.get(0)[1]};
+    		stringMap[a1[0]][a1[1]] = "N";
+    		snake2.remove(0);
+    		
+    	}
+    	
+    }
+    
     static private void redraw() {
     	
     	if(!running) {
@@ -360,6 +571,9 @@ public class Main {
         		switch(stringMap[i][j]) {
         			case "S": // Snake
         				panelMap[i][j].setBackground(SNAKE_BLUE);
+        				break;
+        			case "SC": // Snake
+        				panelMap[i][j].setBackground(Color.CYAN);
         				break;
         			case "A": // Apple
         				panelMap[i][j].setBackground(APPLE_RED);
@@ -392,7 +606,7 @@ public class Main {
     		SoundPlayer.playSound("apple-crunch.wav");
     	}
     	
-    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - SnakeLength - totalNumOfApples - numOfWalls;
+    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls;
     	
     	String nextAppleType = "A";
     	
@@ -404,6 +618,10 @@ public class Main {
     			// GOLDEN APPLE!
     			nextAppleType = "AG";
     		}
+    	}
+    	
+    	if(gameChosen == 3) {
+    		nextAppleType = "A"; // no golden apples in 2-player
     	}
     	
     	// generate empty spot for apple
@@ -436,7 +654,7 @@ public class Main {
     		SoundPlayer.playSound("wall-spawns.wav");
     	}
     	
-    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - SnakeLength - totalNumOfApples - numOfWalls;
+    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls;
     	
     	String nextWallType = "W";
     	
@@ -502,6 +720,15 @@ public class Main {
         JLabel scoreMessage = new JLabel("Score: " + score, SwingConstants.CENTER);
         scoreMessage.setFont(new Font("Arial", Font.BOLD, 42));
         scoreMessage.setForeground(Color.BLACK);
+        if(gameChosen == 3) {
+        	if(winner == 1) {
+        		scoreMessage.setText("Dark Blue Wins!");
+        		scoreMessage.setForeground(SNAKE_BLUE);
+        	}else if(winner == 2) {
+        		scoreMessage.setText("Cyan Wins!");
+        		scoreMessage.setForeground(Color.CYAN);
+        	}
+        }
         
         JButton exitButton = new JButton("Exit");
         exitButton.setFont(new Font("Arial", Font.BOLD, 42));
@@ -525,7 +752,6 @@ public class Main {
     }
     
     
-    
     static private String[][] initStringMap(){
     	
     	String[][] map = new String[MAP_HEIGHT][MAP_WIDTH];
@@ -534,6 +760,38 @@ public class Main {
     		for(int j = 0;j < MAP_WIDTH;j++) {
         		map[i][j] = "N";
         	}
+    	}
+    	
+    	if(gameChosen == 3) { // check for two-player version
+    		
+    		// Blue Snake
+        	map[MAP_HEIGHT - 2][MAP_WIDTH - 3] = "S";
+        	int[] a = {MAP_HEIGHT - 2, MAP_WIDTH - 3};
+        	snake.add(a);
+        	
+        	map[MAP_HEIGHT - 2][MAP_WIDTH - 4] = "S";
+        	int[] a1 = {MAP_HEIGHT - 2, MAP_WIDTH - 4};
+        	snake.add(a1);
+        	
+        	map[MAP_HEIGHT - 2][MAP_WIDTH - 5] = "S";
+        	int[] a2 = {MAP_HEIGHT - 2, MAP_WIDTH - 5};
+        	snake.add(a2);
+        	
+        	// Cyan Snake
+        	map[1][2] = "SC";
+        	int[] a3 = {1, 2};
+        	snake2.add(a3);
+        	
+        	map[1][3] = "SC";
+        	int[] a4 = {1, 3};
+        	snake2.add(a4);
+        	
+        	map[1][4] = "SC";
+        	int[] a5 = {1, 4};
+        	snake2.add(a5);
+        	
+        	return map;
+    		
     	}
     	
     	//Create snake and apple, adding snake's body cords to the snake ArrayList:
@@ -615,6 +873,33 @@ public class Main {
             } else if (keyCode == KeyEvent.VK_2 && gameChosen == 0) {
             	
             	gameChosen = 2;
+            } else if (keyCode == KeyEvent.VK_3 && gameChosen == 0) {
+            	
+            	gameChosen = 3;
+            }
+            
+            if(gameChosen == 3) {
+            	if (keyCode == KeyEvent.VK_W && gameChosen != 0) {
+                	
+                	if(!SnakeCurrentDirection2.equals("D")) {
+                		SnakeDirection2 = "U";
+                	}
+                } else if (keyCode == KeyEvent.VK_S && gameChosen != 0) {
+                	
+                	if(!SnakeCurrentDirection2.equals("U")) {
+                		SnakeDirection2 = "D";
+                	}
+                } else if (keyCode == KeyEvent.VK_A && gameChosen != 0) {
+                	
+                	if(!SnakeCurrentDirection2.equals("R")) {
+                		SnakeDirection2 = "L";
+                	}
+                } else if (keyCode == KeyEvent.VK_D && gameChosen != 0) {
+                	
+                	if(!SnakeCurrentDirection2.equals("L")) {
+                		SnakeDirection2 = "R";
+                	}
+                }
             }
         }
     	
