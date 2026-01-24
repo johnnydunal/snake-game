@@ -8,8 +8,6 @@ public class Main {
 	
 	/*
 	 * Welcome to Snake Game!
-	 * 
-	 * This whole game is built in a single file! (because why not)
 	 */
 	
 	static JFrame frame = new JFrame("Snake Game");
@@ -50,11 +48,13 @@ public class Main {
     static JPanel[][] panelMap;
     
     // Special variables for the CHAOTIC GAME version:
+    static int chaos = 5; // ADAPTIVE DIFFICULTY! Value between 0-10. Higher chaos makes the game harder.
     static int totalNumOfApples = 0;
     static int numOfWalls = 0;
     static final int maxNumOfApples = 8;
     static boolean readyToAddWall = true;
     static int wallsToAddPerWallAttack = 2;
+    static int[] portals; // holds coordinates of portals
     
     // Special variables for the 2-player version:
     static int winner = 0; // 0 = no winner yet, 1 = blue, 2 = cyan
@@ -120,12 +120,12 @@ public class Main {
         		playNormalGame();
         		break;
         	case 2:
-        		String introMessage = "Chaos is coming! Apples multiply, golden apples shine, walls appear at random, and the world has no edges. Good Luck!";
+        		String introMessage = "Chaos is coming! Apples multiply, golden apples shine, walls and portals appear at random, and the world has no edges. Good Luck!";
         		JOptionPane.showMessageDialog(frame, introMessage, "Chaos Ensues", JOptionPane.INFORMATION_MESSAGE);
         		playChaoticGame();
         		break;
         	case 3:
-        		String introMessage2 = "Chaos is coming! Apples multiply, golden apples shine, walls appear at random, the world has no edges, and there are 2 snakes present.\nOrange snake uses WASD. Blue uses arrow keys. Good luck!";
+        		String introMessage2 = "Chaos is coming! Apples multiply, walls and portals appear at random, the world has no edges, and there are 2 snakes present.\nOrange snake uses WASD. Blue snake uses arrow keys. Good luck!";
         		JOptionPane.showMessageDialog(frame, introMessage2, "Chaos Ensues - 2 Player", JOptionPane.INFORMATION_MESSAGE);
         		playTwoPlayerChaoticGame();
         		break;
@@ -396,7 +396,7 @@ public class Main {
     	//		- If no, snake keeps moving
     	String tileReached = stringMap[snakeHeadCords[0]][snakeHeadCords[1]];
     	
-    	if(tileReached.equals("A")) {
+    	if(tileReached.equals("A")) { // Apple
     		
     		// Update map to show new snake head
     		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
@@ -411,7 +411,7 @@ public class Main {
     		checkSpeed();
     		appleEaten(true);
     		
-    	} else if(tileReached.equals("AG")) {
+    	} else if(tileReached.equals("AG")) { // Golden Apple
     		
     		// Golden Apple Eaten!
     		
@@ -431,16 +431,66 @@ public class Main {
     		checkSpeed();
     		appleEaten(true);
     		
-    	} else if(tileReached.equals("W")){
+    	} else if(tileReached.equals("W")){ // Wall
     		
     		winner = 2;
     		gameOver();
     		return;
-    	} else if(tileReached.equals("SC")){
+    	} else if(tileReached.equals("SC")){ // Cyan Snake
     		
     		winner = 2;
     		gameOver();
     		return;
+    	} else if(tileReached.equals("P")){ // Portal
+    		
+    		SoundPlayer.playSound("portal-sound.wav");
+    		
+    		if(snakeHeadCords[0] == portals[0] && snakeHeadCords[1] == portals[1]) {
+    			
+    			// portal 1 -> portal 2
+    			snakeHeadCords[0] = portals[2];
+        		snakeHeadCords[1] = portals[3];
+        		
+        		// remove portal
+        		stringMap[portals[0]][portals[1]] = "N";
+        		portals = new int[]{-1, 0, 0, 0};
+        		
+        		// Update map to show new snake head
+        		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
+        		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
+        		snake.add(a);
+        		
+        		// Update map to remove snake tail
+        		int[] a1 = {snake.get(0)[0], snake.get(0)[1]};
+        		stringMap[a1[0]][a1[1]] = "N";
+        		snake.remove(0);
+    			
+    		}else {
+    			
+    			// portal 2 -> portal 1
+    			snakeHeadCords[0] = portals[0];
+        		snakeHeadCords[1] = portals[1];
+        		
+        		// remove portal
+        		stringMap[portals[2]][portals[3]] = "N";
+        		portals = new int[]{-1, 0, 0, 0};
+        		
+        		// Update map to show new snake head
+        		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
+        		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
+        		snake.add(a);
+        		
+        		// Update map to remove snake tail
+        		int[] a1 = {snake.get(0)[0], snake.get(0)[1]};
+        		stringMap[a1[0]][a1[1]] = "N";
+        		snake.remove(0);
+    			
+    		}
+    		
+    		if(chaos > 4) {
+    			addPortal(); // add new portal
+    		}
+    		
     	} else { // apple not eaten
     		
     		// Update map to show new snake head
@@ -543,6 +593,56 @@ public class Main {
     		winner = 1;
     		gameOver();
     		return;
+    	} else if(tileReached.equals("P")) {
+    		
+    		SoundPlayer.playSound("portal-sound.wav");
+    		
+    		if(snakeHeadCords2[0] == portals[0] && snakeHeadCords2[1] == portals[1]) {
+    			
+    			// portal 1 -> portal 2
+    			snakeHeadCords2[0] = portals[2];
+        		snakeHeadCords2[1] = portals[3];
+        		
+        		// remove portal
+        		stringMap[portals[0]][portals[1]] = "N";
+        		portals = new int[]{-1, 0, 0, 0};
+        		
+        		// Update map to show new snake head
+        		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
+        		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
+        		snake2.add(a);
+        		
+        		// Update map to remove snake tail
+        		int[] a1 = {snake2.get(0)[0], snake2.get(0)[1]};
+        		stringMap[a1[0]][a1[1]] = "N";
+        		snake2.remove(0);
+    			
+    		}else {
+    			
+    			// portal 2 -> portal 1
+    			snakeHeadCords2[0] = portals[0];
+        		snakeHeadCords2[1] = portals[1];
+        		
+        		// remove portal
+        		stringMap[portals[2]][portals[3]] = "N";
+        		portals = new int[]{-1, 0, 0, 0};
+        		
+        		// Update map to show new snake head
+        		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "S";
+        		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
+        		snake2.add(a);
+        		
+        		// Update map to remove snake tail
+        		int[] a1 = {snake2.get(0)[0], snake2.get(0)[1]};
+        		stringMap[a1[0]][a1[1]] = "N";
+        		snake2.remove(0);
+    			
+    		}
+    		
+    		if(chaos > 4) {
+    			addPortal(); // add new portal
+    		}
+    		
     	} else { // apple not eaten
     		
     		// Update map to show new snake head
@@ -584,6 +684,9 @@ public class Main {
         			case "W": // Wall
         				panelMap[i][j].setBackground(Color.BLACK);
         				break;
+        			case "P": // Wall
+        				panelMap[i][j].setBackground(Color.MAGENTA);
+        				break;
         			default: // normal checkered background
         				if((i % 2 != 0 && j % 2 == 0) || (i % 2 == 0 && j % 2 != 0)) {
                 			panelMap[i][j].setBackground(DARK_GREEN);
@@ -606,7 +709,7 @@ public class Main {
     		SoundPlayer.playSound("apple-crunch.wav");
     	}
     	
-    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls;
+    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls - 5;
     	
     	String nextAppleType = "A";
     	
@@ -654,7 +757,7 @@ public class Main {
     		SoundPlayer.playSound("wall-spawns.wav");
     	}
     	
-    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls;
+    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls - 5;
     	
     	String nextWallType = "W";
     	
@@ -683,6 +786,35 @@ public class Main {
     	}
 		
 	}
+    
+    static private void addPortal() {
+    	
+    	int emptySpots = (MAP_HEIGHT * MAP_WIDTH) - BlueSnakeLength - CyanSnakeLength - totalNumOfApples - numOfWalls - 5;
+    	
+    	for(int p = 0;p < 3;p+=2) {
+    		
+    		Random r = new Random();
+        	
+        	int chosenSpot = r.nextInt(emptySpots);
+        	int currentSpot = 0;
+        	
+        	for(int i = 0;i < MAP_HEIGHT;i++) {
+        		for(int j = 0;j < MAP_WIDTH;j++) {
+        			
+            		if(stringMap[i][j].equals("N")) {
+            			if(chosenSpot == currentSpot) {
+            				stringMap[i][j] = "P";
+            				portals[p] = i;
+            				portals[p + 1] = j;
+            				numOfWalls++;
+            			}
+            			currentSpot++;
+            		}
+            	}
+        	}
+    		
+    	}
+    }
     
     static private void checkSpeed() {
     	
@@ -760,6 +892,12 @@ public class Main {
     		for(int j = 0;j < MAP_WIDTH;j++) {
         		map[i][j] = "N";
         	}
+    	}
+    	
+    	if(gameChosen != 1) { // setup portals for chaotic mode
+    		portals = new int[] {6, MAP_WIDTH / 2, 12, MAP_WIDTH / 2};
+    		map[portals[0]][portals[1]] = "P";
+    		map[portals[2]][portals[3]] = "P";
     	}
     	
     	if(gameChosen == 3) { // check for two-player version
