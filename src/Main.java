@@ -27,7 +27,7 @@ public class Main {
     static int score = 0;
     
     static int DEFAULT_SNAKE_SPEED = 8;
-    static int FAST_SNAKE_SPEED = (int)(DEFAULT_SNAKE_SPEED * 2.2);
+    static int FAST_SNAKE_SPEED = (int)(DEFAULT_SNAKE_SPEED * 2);
     static int SNAKE_SPEED = DEFAULT_SNAKE_SPEED; // amount of tiles that the snake moves in a second
     static int BlueSnakeLength = 3;
     static String SnakeDirection = "N";
@@ -41,7 +41,9 @@ public class Main {
     static final Color DARK_GREEN = new Color(0, 150, 0);
     static final Color LIGHT_GREEN = new Color(0, 130, 0);
     static final Color SNAKE_BLUE = new Color(50, 85, 180);
-    static final Color APPLE_RED = new Color(125, 10, 0);
+    static final Color APPLE_RED = new Color(125, 10, 0); // OG
+    //static final Color APPLE_RED = new Color(235, 23, 12); // Luciano
+    //static final Color APPLE_RED = new Color(168, 24, 24); // Marcus
     static final Color APPLE_GOLD = new Color(255, 215, 0);
     
     static String[][] stringMap;
@@ -63,6 +65,10 @@ public class Main {
     static int CyanSnakeLength = 3;
     static String SnakeDirection2 = "N";
     static String SnakeCurrentDirection2 = "R";
+    static boolean blueSnakeBoosted = false;
+    static int blueSnakeBoostedTicks = 0;
+    static boolean cyanSnakeBoosted = false;
+    static int cyanSnakeBoostedTicks = 0;
 
 	public static void main(String[] args) throws InterruptedException{
 		
@@ -182,6 +188,7 @@ public class Main {
         	
         	//wait
         	Thread.sleep(1000 / SNAKE_SPEED);
+        	checkSpeed();
         	
         }
 	}
@@ -259,6 +266,7 @@ public class Main {
         	
         	//wait
         	Thread.sleep(1000 / SNAKE_SPEED);
+        	checkSpeed();
         	
         }
 	}
@@ -338,10 +346,22 @@ public class Main {
         	update();
         	update2(); // second snake
         	
+        	// Check for boosted snakes, and re-update any that are boosted:
+        	if(blueSnakeBoosted) {
+        		update();
+        		redraw();
+        	}
+        	if(cyanSnakeBoosted) {
+        		update2();
+        		redraw();
+        	}
+        	
         	redraw();
         	
         	//wait
         	Thread.sleep(1000 / SNAKE_SPEED);
+        	checkSpeedBlue();
+        	checkSpeedCyan();
         	
         }
 	}
@@ -415,6 +435,8 @@ public class Main {
     		
     		// Golden Apple Eaten!
     		
+    		blueSnakeBoosted = true; // For 2-player game mode
+    		
     		// Update map to show new snake head
     		stringMap[snakeHeadCords[0]][snakeHeadCords[1]] = "S";
     		int[] a = {snakeHeadCords[0], snakeHeadCords[1]};
@@ -425,10 +447,12 @@ public class Main {
     		totalNumOfApples--;
     		readyToAddWall = true; // for chaotic mode
     		
-    		ticksSpentWithSpeedBoost = 0;
-    		speedBoosted = true;
+    		if(gameChosen != 3) {
+    			ticksSpentWithSpeedBoost = 0;
+        		speedBoosted = true;
+        		checkSpeed();
+    		}
     		
-    		checkSpeed();
     		appleEaten(true);
     		
     	} else if(tileReached.equals("W")){ // Wall
@@ -487,7 +511,7 @@ public class Main {
     			
     		}
     		
-    		if(chaos > 4) {
+    		if(chaos > 2) {
     			addPortal(); // add new portal
     		}
     		
@@ -567,6 +591,8 @@ public class Main {
     		
     		// Golden Apple Eaten!
     		
+    		cyanSnakeBoosted = true;
+    		
     		// Update map to show new snake head
     		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
     		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
@@ -577,10 +603,12 @@ public class Main {
     		totalNumOfApples--;
     		readyToAddWall = true; // for chaotic mode
     		
-    		ticksSpentWithSpeedBoost = 0;
-    		speedBoosted = true;
+    		if(gameChosen != 3) {
+    			ticksSpentWithSpeedBoost = 0;
+    			speedBoosted = true;
+    			checkSpeed();
+    		}
     		
-    		checkSpeed();
     		appleEaten(true);
     		
     	} else if(tileReached.equals("W")){
@@ -628,7 +656,7 @@ public class Main {
         		portals = new int[]{-1, 0, 0, 0};
         		
         		// Update map to show new snake head
-        		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "S";
+        		stringMap[snakeHeadCords2[0]][snakeHeadCords2[1]] = "SC";
         		int[] a = {snakeHeadCords2[0], snakeHeadCords2[1]};
         		snake2.add(a);
         		
@@ -698,7 +726,7 @@ public class Main {
         	}
     	}
     	
-    	checkSpeed(); // checks whether the snake's speed is boosted
+    	//checkSpeed(); // checks whether the snake's speed is boosted
     }
     
     static private boolean appleEaten(boolean playSound) {
@@ -721,10 +749,6 @@ public class Main {
     			// GOLDEN APPLE!
     			nextAppleType = "AG";
     		}
-    	}
-    	
-    	if(gameChosen == 3) {
-    		nextAppleType = "A"; // no golden apples in 2-player
     	}
     	
     	// generate empty spot for apple
@@ -824,7 +848,7 @@ public class Main {
     		
     		SNAKE_SPEED = FAST_SNAKE_SPEED;
     		
-    		if(ticksSpentWithSpeedBoost > 120) {
+    		if(ticksSpentWithSpeedBoost >= 120) {
     			speedBoosted = !speedBoosted; // turn off speed boost
     			ticksSpentWithSpeedBoost = 0; // reset speed boost timer
     		}else {
@@ -832,6 +856,32 @@ public class Main {
     		}
     	} else {
     		SNAKE_SPEED = DEFAULT_SNAKE_SPEED;
+    	}
+    }
+    
+    static private void checkSpeedBlue() {
+    	
+    	if(blueSnakeBoosted) {
+    		
+    		blueSnakeBoostedTicks++;
+    		
+    		if(blueSnakeBoostedTicks >= 120) {
+    			blueSnakeBoosted = !blueSnakeBoosted; // turn off speed boost
+    			blueSnakeBoostedTicks = 0;
+    		}
+    	}
+    }
+    
+    static private void checkSpeedCyan() {
+    	
+    	if(cyanSnakeBoosted) {
+    		
+    		cyanSnakeBoostedTicks++;
+    		
+    		if(cyanSnakeBoostedTicks >= 120) {
+    			cyanSnakeBoosted = !cyanSnakeBoosted; // turn off speed boost
+    			cyanSnakeBoostedTicks = 0;
+    		}
     	}
     }
     
